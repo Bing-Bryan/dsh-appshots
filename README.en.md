@@ -1,26 +1,89 @@
 # dsh-appshots
 
-[![Awesome DSH Plugin](https://awesome-dsh-plugin.com/badge.svg)](https://awesome-dsh-plugin.com)
+[![Release](https://img.shields.io/github/v/release/Bing-Bryan/dsh-appshots)](https://github.com/Bing-Bryan/dsh-appshots/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/Bing-Bryan/dsh-appshots/blob/main/LICENSE)
 
-[简体中文](README.md) | English
+[简体中文](README.md) | **English**
 
-Codex-style window capture for the official **DeepSeek Harness** desktop app, also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop), on macOS and Windows.
+A window-capture plugin for the official **DeepSeek Harness** (also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop)). Double-tap Right Command, drop the frontmost window into the composer, and send its compact text as hidden context alongside the image.
 
-The default hotkey is **double-tap Right Command** (to avoid Codex's double-Command), or **Space + Right Command** or **Right Command + Right Option**, or the camera button next to the composer: grab the frontmost window and attach its screenshot to the composer draft. Nothing is sent until you send it. On send, the compact window text is injected as hidden context alongside the image; you can also preview it by opening the image.
+![dsh-appshots UI mockup](assets/hero-en.png)
 
-- Captures the frontmost window only, not the whole screen
-- Attaches the screenshot to the composer draft; it is **never sent automatically**
-- Plays the system camera shutter sound and immediately outlines the captured window (5px, ~1.8s), then brings DSH forward with the screenshot
-- Opening the attached image shows a **View text** control with compact accessibility text (containers and Help removed, sidebars/navigation/tab groups skipped, buttons as `[button]`, capped at 8k characters; when over, the most recent content is kept)
-- On send, the compact window text is injected as hidden context alongside the image; **if the image is removed before sending, the text is not injected**
-- Does not skip DSH by default, so you can share the DSH window itself
-- After capture, brings DeepSeek Harness (or DSH Desktop) to the front
+*UI mockup: the target window is outlined, the screenshot lands in the composer, and View text shows the compact copy.*
+
+## What it does
+
+- **Double-tap Right Command / camera button**: capture the frontmost window only, not the whole screen
+- **Capture feedback**: system shutter sound + a 5px glowing outline around the target window
+- **Draft only**: the screenshot is never sent automatically; on send, the compact window text goes with it as hidden context
+- **View text**: open the attached image to read the window text; if the image is removed or replaced, the text is not injected
+- **Official Harness first**: does not skip DSH by default, and still works with DSH Desktop
+
+## Install
+
+Run in a terminal where `dsh` is available:
+
+```sh
+dsh plugin --profile desktop add "github:Bing-Bryan/dsh-appshots#v0.4.8"
+```
+
+> On macOS, if `dsh` is not on your PATH, use the bundled CLI:
+> `"/Applications/DeepSeek Harness.app/Contents/Resources/runtime/cli/bin/dsh" plugin --profile desktop add "github:Bing-Bryan/dsh-appshots#v0.4.8"`
+
+1. Restart DeepSeek Harness
+2. Grant **Screen Recording** and **Accessibility** (see Permissions below)
+3. Verify: double-tap Right Command. You should hear the shutter, see the target window outlined, then DSH comes forward with the image already in the composer
+4. Open the image; **View text** should be in the top-right corner
+
+To upgrade, replace `v0.4.8` with the new tag and restart:
+
+```sh
+dsh plugin --profile desktop add "github:Bing-Bryan/dsh-appshots#vX.Y.Z"
+```
+
+From source:
+
+```sh
+git clone https://github.com/Bing-Bryan/dsh-appshots.git
+cd dsh-appshots
+dsh plugin --profile desktop add .
+```
+
+On Windows the helper compiles on first capture with the system `csc.exe` (.NET Framework 4.x); Visual Studio is not required. The Windows path is inherited from upstream and has not been separately verified in this fork.
+
+## Usage
+
+1. Focus the window you want to share
+2. macOS: double-tap Right Command (default, within 420ms); Windows: press both Ctrl keys; or click the camera button next to the composer
+3. DSH comes forward with the screenshot attached to the composer, **not sent**
+4. Open the image to read **View text**; add a prompt and send. The compact text follows the image as hidden context; if the image is removed before sending, the text is not injected
+
+If a session is open, the Appshot attaches there; otherwise a new session is created. Consecutive captures go into the same session.
+
+## View text and hidden context
+
+The window text is compacted: containers and Help removed, sidebars/navigation/tab groups/toolbars skipped, buttons rendered as `[button]`, capped at 8k characters; when over the cap, the newest content is kept.
+
+The compact text and the image share one unique filename binding:
+
+- Image still present on send -> the text is injected once as hidden context
+- Image removed, replaced, or never sent -> **no injection**
+
+So a deleted image cannot leak its text into the conversation.
+
+## Compared with Codex
+
+Same Gemini answer: Codex returns 2,393 chars / 50 lines; dsh-appshots returns 2,006 chars / 13 lines. Similar length, but Codex keeps `split group`, `row/cell` and duplicate `Description` entries; dsh-appshots keeps only readable text, with buttons as `[button]`.
+
+![Codex vs dsh-appshots on a Gemini answer](assets/case-gemini.png)
+
+*A text-structure comparison, not a UI screenshot.*
 
 ## Why this fork
 
 Upstream [`WongYuYe/dsh-appshots`](https://github.com/WongYuYe/dsh-appshots) targets DSH Desktop. This fork keeps upstream's window capture, camera button and Windows support, but rebuilds the capture path, text context and View text around the official **DeepSeek Harness**.
 
-This is not just a UI change: the native helper, host routes and client all changed.
+The changes are mainly in the native helper, host routes and client, not just the UI.
 
 | | Upstream | This fork |
 |---|---|---|
@@ -34,75 +97,41 @@ This is not just a UI change: the native helper, host routes and client all chan
 
 In one line: **upstream is the generic DSH Desktop build; this fork is the official-Harness adaptation, focused on making screenshot, text and stability one reliable path.**
 
-## Compared with Codex
-
-Same Gemini answer: Codex returns 2,393 chars / 50 lines; dsh-appshots returns 2,006 chars / 13 lines. Similar length, but Codex keeps `split group`, `row/cell` and duplicate `Description` entries; dsh-appshots keeps only readable text, with buttons as `[button]`.
-
-![Codex vs dsh-appshots on a Gemini answer](assets/case-gemini.png)
-
-## Install
-
-```sh
-dsh plugin --profile desktop add github:Bing-Bryan/dsh-appshots
-```
-
-Restart DeepSeek Harness after installing.
-
-From source:
-
-```sh
-git clone https://github.com/Bing-Bryan/dsh-appshots.git
-cd dsh-appshots
-dsh plugin --profile desktop add .
-```
-
-On Windows the helper compiles on first capture with the system `csc.exe` (.NET Framework 4.x). Visual Studio is not required.
-
-Release: bump `package.json` to `X.Y.Z` and push a `vX.Y.Z` tag. GitHub Actions opens the GitHub Release and publishes to npm with Trusted Publisher (OIDC).
-
 ## Permissions
 
 ### macOS
 
-System Settings → Privacy & Security:
+System Settings -> Privacy & Security:
 
 - **Screen Recording**: required to capture the frontmost window
-- **Accessibility**: required to listen for the hotkey and read window text
+- **Accessibility**: required for the hotkey and reading window text
 
-Grant these to **DeepSeek Harness** (or **DSH Desktop** for the third-party shell). If the hotkey does not fire, also allow `appshot-capture`.
+Grant both to **DeepSeek Harness** (or **DSH Desktop** if you use the third-party shell). If the hotkey does not fire, also allow `appshot-capture`.
 
-> `Space + Right Command` consumes the Space key to avoid Spotlight, but without Accessibility granted to the helper macOS may still open Spotlight. The default double-tap is the safer choice.
+> The `Space + Right Command` path consumes the Space key to avoid Spotlight. If the helper does not have Accessibility permission, Spotlight may still appear. The default double-tap Right Command is the safer choice.
 
 ### Windows
 
-- Screen capture uses `CopyFromScreen`; Windows may prompt once for screen access
-- Window text uses UI Automation; some elevated or protected apps expose little or no text
-- The default hotkey is both Ctrl keys. If it does not fire, try `hotkeyMode: win-hotkey`
-
-## Use
-
-1. Focus the window you want to share.
-2. **Double-tap Right Command** (default on macOS, within 420ms) or both Ctrl keys (Windows), or click the camera button in the composer.
-3. DeepSeek Harness comes to the front and the screenshot is attached to the composer draft; it is **not sent automatically**.
-4. Open the image to use **View text**; add a prompt and send when ready. The text is injected as hidden context with the image; if the image is removed before sending, it is not injected.
-
-If a session is currently open, the appshot goes there. If none is open, a new session is created. Consecutive captures go to the same session.
+- Capture uses `CopyFromScreen`; Windows may ask for screen access once
+- Window text uses UI Automation; elevated or protected apps often expose little text
+- The default hotkey is both Ctrl keys. If it does not fire, set `hotkeyMode: win-hotkey`
 
 ## Settings
 
-Namespace `dsh-appshots` in `~/.dsh/settings.yaml`:
+Namespace `dsh-appshots`, stored in `~/.dsh/settings.yaml`:
 
 | Field | Default | Meaning |
 |---|---|---|
-| `skipSelf` | `false` | Skip DeepSeek Harness itself; `false` lets you capture the DSH window |
-| `recentWindowMs` | `60000` | If no session is open, reuse the session captured within this window |
+| `skipSelf` | `false` | Skip DeepSeek Harness itself; `false` by default, so you can capture DSH's own window |
+| `attachText` | `true` | Inject the compact text as hidden context; set to `false` to keep View text only |
+| `recentWindowMs` | `60000` | When no session is open, reuse a session captured within this window |
 | `hotkeyMode` | `auto` | `auto` / `double-right-command` / `space-right-command` / `right-command-right-option` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
 | `carbonKeyCode` | `0` | Carbon key code when `hotkeyMode` is `carbon` |
 | `carbonModifiers` | `256` | Carbon modifiers; 256 is Command |
-| `winVk` | `44` | Virtual-key code when `hotkeyMode` is `win-hotkey` (44 is PrintScreen) |
+| `winVk` | `44` | Virtual key code for `win-hotkey` (44 is PrintScreen) |
 | `winModifiers` | `3` | Win32 modifiers for `win-hotkey`; 3 is Ctrl+Alt |
 
-`auto` is **double-tap Right Command** on macOS and both Ctrl keys on Windows. Pressing another key while Right Command is held (for example ⌘C) marks that press as not a clean tap, so shortcuts do not trigger a capture. To switch to Space + Right Command or Right Command + Right Option:
+`auto` means **double-tap Right Command** on macOS and both Ctrl keys on Windows. If you press another key while holding Right Command (for example ⌘C), that press is not treated as a single tap. To use Space + Right Command or Right Command + Right Option:
 
 ```yaml
 dsh-appshots:
@@ -111,12 +140,16 @@ dsh-appshots:
 
 ## Limits
 
-- macOS and Windows only
+- macOS and Windows only; the Windows path is inherited from upstream and has not been separately verified in this fork
 - Window text comes from the platform accessibility tree, so some apps expose only visible copy
-- Window text is compacted: containers and Help removed, sidebars/navigation/tab groups skipped, buttons as `[button]`, long text merged, capped at 8k characters; older content is dropped first
+- Text is compacted: containers and Help removed, sidebars/navigation/tab groups skipped, buttons as `[button]`, long text merged, capped at 8k characters; older content is dropped first
 - The compact text is sent as hidden context with the attached image; if the image is removed before sending, it is not injected
 - Terminal pixels (VS Code xterm) are usually absent from accessibility, so compile logs still come from the screenshot
 - Windows capture copies the on-screen pixels of the window rectangle; occluded windows include whatever is visible
+
+## Release
+
+A `vX.Y.Z` tag in this fork creates a GitHub Release with the tarball; `npm publish` runs only in the upstream repository, and the fork CI skips it.
 
 ## License
 

@@ -5,6 +5,10 @@
 
 **简体中文** | [English](README.en.md)
 
+![dsh-appshots 界面示意](assets/hero.png)
+
+*界面示意：目标窗口被描边，截图进草稿，点开可看「查看文本」。*
+
 给官方 **DeepSeek Harness** 用的窗口截图插件，也兼容 [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop)。双击右 ⌘，把当前窗口放进输入框；发送时连同压缩后的窗口文字一起带给模型。
 
 ## 相对上游的优化
@@ -22,10 +26,6 @@
 | 截 DSH 自身 | 默认跳过 | 默认不跳过，方便把 DSH 界面发给模型 |
 
 一句话概括：**上游是 DSH Desktop 的通用版；这个 fork 是官方 Harness 的适配版，重点是把截图、文本和稳定性做成一条可靠的链路。**
-
-![dsh-appshots 界面示意](assets/hero.png)
-
-*界面示意：目标窗口被描边，截图进草稿，点开可看「查看文本」。*
 
 ## 它能做什么
 

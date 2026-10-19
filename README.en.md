@@ -5,6 +5,10 @@
 
 [简体中文](README.md) | **English**
 
+![dsh-appshots UI mockup](assets/hero-en.png)
+
+*UI mockup: the target window is outlined, the screenshot lands in the composer, and View text shows the compact copy.*
+
 A window-capture plugin for the official **DeepSeek Harness** (also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop)). Double-tap Right Command, drop the frontmost window into the composer, and send its compact text as hidden context alongside the image.
 
 ## What this fork improves
@@ -22,10 +26,6 @@ This fork is based on upstream [`WongYuYe/dsh-appshots`](https://github.com/Wong
 | Capturing DSH itself | Skipped by default | Not skipped by default, so you can send the DSH UI itself |
 
 In one line: **upstream is the generic DSH Desktop build; this fork is the official-Harness adaptation, focused on making screenshot, text and stability one reliable path.**
-
-![dsh-appshots UI mockup](assets/hero-en.png)
-
-*UI mockup: the target window is outlined, the screenshot lands in the composer, and View text shows the compact copy.*
 
 ## What it does
 

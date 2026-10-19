@@ -16,6 +16,16 @@
 - 默认不跳过 DSH 自身：在 DSH 里按也会截 DSH，方便把界面本身发给模型
 - 截图后自动把 DeepSeek Harness（或 DSH Desktop）调到前台
 
+## 捕获效果
+
+双击右 ⌘ 后，截图只进输入框，点开图片可看「查看文本」：
+
+![dsh-appshots 捕获的窗口](assets/captured-window.png)
+
+同一个 Chrome 窗口，Codex 会把工具栏、书签和 30 多个标签页一起附加；dsh-appshots 跳过导航，只保留正文：
+
+![Codex 与 dsh-appshots 的附加文本对比](assets/comparison.png)
+
 ## 安装
 
 ```sh

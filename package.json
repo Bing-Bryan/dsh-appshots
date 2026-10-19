@@ -1,6 +1,6 @@
 {
   "name": "dsh-appshots",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Codex-style Appshots for the official DeepSeek Harness desktop (and DSH Desktop): Right Command + Right Option or Space + Right Command (or the camera button) grabs the frontmost window, attaches it to the current chat, and injects the accessibility tree as hidden context.",
   "type": "module",
   "main": "lib/index.js",
@@ -68,7 +68,7 @@
   "peerDependencies": {
     "@deepseek-ai/cordis": ">=4.0.1-rc.1 <5.0.0-0",
     "@deepseek-ai/schemastery": "^3.18.1",
-    "@deepseek-ai/dsh-settings": ">=0.0.1-rc.1 <0.2.0-0"
+    "@deepseek-ai/dsh-settings": ">=0.0.1-rc.1 <1.0.0-0"
   },
   "peerDependenciesMeta": {
     "@deepseek-ai/cordis": { "optional": true },

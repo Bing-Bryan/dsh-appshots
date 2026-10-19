@@ -16,16 +16,6 @@ The default hotkey is **double-tap Right Command** (to avoid Codex's double-Comm
 - Does not skip DSH by default, so you can share the DSH window itself
 - After capture, brings DeepSeek Harness (or DSH Desktop) to the front
 
-## What it looks like
-
-After double-tapping Right Command, the screenshot lands in the composer and **View text** shows the compact window text:
-
-![A captured window](assets/captured-window.png)
-
-For the same Chrome window, Codex keeps the toolbar, bookmarks and 30+ tabs; dsh-appshots skips navigation and keeps only the page content:
-
-![Codex vs dsh-appshots text](assets/comparison.png)
-
 ## Install
 
 ```sh

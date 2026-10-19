@@ -6,11 +6,12 @@
 
 Codex-style window capture for the official **DeepSeek Harness** desktop app, also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop), on macOS and Windows.
 
-The default hotkey is **double-tap Right Command** (to avoid Codex's double-Command), or **Space + Right Command** or **Right Command + Right Option**, or the camera button next to the composer: grab the frontmost window, attach it to the current chat, and inject available window text as hidden context.
+The default hotkey is **double-tap Right Command** (to avoid Codex's double-Command), or **Space + Right Command** or **Right Command + Right Option**, or the camera button next to the composer: grab the frontmost window and send its screenshot plus window text as one message into the current chat.
 
 - Captures the frontmost window only, not the whole screen
-- Attaches the screenshot to the composer draft without sending it
-- Reads available window text (Accessibility on macOS, UI Automation on Windows) and injects it as hidden model context
+- Sends automatically by default: the screenshot and window text become one user message
+- Falls back to attaching the capture to the composer draft when the composer already has text
+- Reads available window text (Accessibility on macOS, UI Automation on Windows) and uses it as the message body
 - Does not skip DSH by default, so you can share the DSH window itself
 - After capture, brings DeepSeek Harness (or DSH Desktop) to the front
 
@@ -57,10 +58,9 @@ Grant these to **DeepSeek Harness** (or **DSH Desktop** for the third-party shel
 
 1. Focus the window you want to share.
 2. **Double-tap Right Command** (default on macOS, within 420ms) or both Ctrl keys (Windows), or click the camera button in the composer.
-3. DeepSeek Harness comes to the front with the screenshot attached.
-4. Add a prompt and send.
+3. DeepSeek Harness comes to the front and the screenshot plus window text are already sent as one message.
 
-If a session is currently open, the appshot goes there. If none is open, a new session is created. Consecutive captures go to the same session.
+If a session is currently open, the appshot goes there. If none is open, a new session is created. Consecutive captures go to the same session. Set `autoSend: false` to go back to attach-only.
 
 ## Settings
 
@@ -69,7 +69,8 @@ Namespace `dsh-appshots` in `~/.dsh/settings.yaml`:
 | Field | Default | Meaning |
 |---|---|---|
 | `skipSelf` | `false` | Skip DeepSeek Harness itself; `false` lets you capture the DSH window |
-| `attachText` | `true` | Inject the accessibility tree as hidden model context on send |
+| `autoSend` | `true` | Send the screenshot + window text as one message; fall back to attach-only when the composer has text |
+| `attachText` | `true` | In attach-only mode, inject the accessibility tree as hidden model context |
 | `recentWindowMs` | `60000` | If no session is open, reuse the session captured within this window |
 | `hotkeyMode` | `auto` | `auto` / `double-right-command` / `space-right-command` / `right-command-right-option` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
 | `carbonKeyCode` | `0` | Carbon key code when `hotkeyMode` is `carbon` |

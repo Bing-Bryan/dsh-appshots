@@ -6,7 +6,7 @@
 
 Codex-style window capture for the official **DeepSeek Harness** desktop app, also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop), on macOS and Windows.
 
-The default hotkey is **Right Command + Right Option** (to avoid Codex's double-Command), or **Space + Right Command**, or the camera button next to the composer: grab the frontmost window, attach it to the current chat, and inject available window text as hidden context.
+The default hotkey is **double-tap Right Command** (to avoid Codex's double-Command), or **Space + Right Command** or **Right Command + Right Option**, or the camera button next to the composer: grab the frontmost window, attach it to the current chat, and inject available window text as hidden context.
 
 - Captures the frontmost window only, not the whole screen
 - Attaches the screenshot to the composer draft without sending it
@@ -45,7 +45,7 @@ System Settings → Privacy & Security:
 
 Grant these to **DeepSeek Harness** (or **DSH Desktop** for the third-party shell). If the hotkey does not fire, also allow `appshot-capture`.
 
-> `Space + Right Command` consumes the Space key to avoid Spotlight, but without Accessibility granted to the helper macOS may still open Spotlight. The default `Right Command + Right Option` is the safer choice.
+> `Space + Right Command` consumes the Space key to avoid Spotlight, but without Accessibility granted to the helper macOS may still open Spotlight. The default double-tap is the safer choice.
 
 ### Windows
 
@@ -56,7 +56,7 @@ Grant these to **DeepSeek Harness** (or **DSH Desktop** for the third-party shel
 ## Use
 
 1. Focus the window you want to share.
-2. Press **Right Command + Right Option** (default on macOS) or both Ctrl keys (Windows), or click the camera button in the composer.
+2. **Double-tap Right Command** (default on macOS, within 420ms) or both Ctrl keys (Windows), or click the camera button in the composer.
 3. DeepSeek Harness comes to the front with the screenshot attached.
 4. Add a prompt and send.
 
@@ -71,17 +71,17 @@ Namespace `dsh-appshots` in `~/.dsh/settings.yaml`:
 | `skipSelf` | `false` | Skip DeepSeek Harness itself; `false` lets you capture the DSH window |
 | `attachText` | `true` | Inject the accessibility tree as hidden model context on send |
 | `recentWindowMs` | `60000` | If no session is open, reuse the session captured within this window |
-| `hotkeyMode` | `auto` | `auto` / `right-command-right-option` / `space-right-command` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
+| `hotkeyMode` | `auto` | `auto` / `double-right-command` / `space-right-command` / `right-command-right-option` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
 | `carbonKeyCode` | `0` | Carbon key code when `hotkeyMode` is `carbon` |
 | `carbonModifiers` | `256` | Carbon modifiers; 256 is Command |
 | `winVk` | `44` | Virtual-key code when `hotkeyMode` is `win-hotkey` (44 is PrintScreen) |
 | `winModifiers` | `3` | Win32 modifiers for `win-hotkey`; 3 is Ctrl+Alt |
 
-`auto` is **Right Command + Right Option** on macOS and both Ctrl keys on Windows. To switch to Space + Right Command:
+`auto` is **double-tap Right Command** on macOS and both Ctrl keys on Windows. Pressing another key while Right Command is held (for example ⌘C) marks that press as not a clean tap, so shortcuts do not trigger a capture. To switch to Space + Right Command or Right Command + Right Option:
 
 ```yaml
 dsh-appshots:
-  hotkeyMode: space-right-command
+  hotkeyMode: space-right-command   # or right-command-right-option
 ```
 
 ## Limits

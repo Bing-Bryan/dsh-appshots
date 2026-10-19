@@ -848,6 +848,10 @@ private var activeHotkeyMode = "both-command"
 private var rightCommandDown = false
 private var swallowSpaceUp = false
 private var lastHotkeyFire = Date.distantPast
+private var lastRightCommandTap = Date.distantPast
+private var rightCommandDownAt = Date.distantPast
+private var rightCommandDirty = false
+private var rightCommandFired = false
 
 func fireHotkey() {
   let now = Date()
@@ -877,6 +881,43 @@ func hotkeyTapCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent
       } else {
         hotkeyArmed = true
       }
+    }
+  case "double-right-command":
+    if type == .flagsChanged {
+      let right = (flags & rightCommandMask) != 0
+      let otherModifiers = (flags & (
+        leftCommandMask
+          | rightOptionMask
+          | CGEventFlags.maskShift.rawValue
+          | CGEventFlags.maskControl.rawValue
+          | CGEventFlags.maskAlternate.rawValue
+      )) != 0
+      if right && !rightCommandDown {
+        rightCommandDown = true
+        rightCommandDownAt = Date()
+        rightCommandDirty = false
+        rightCommandFired = false
+        if !otherModifiers {
+          let gap = Date().timeIntervalSince(lastRightCommandTap)
+          if gap > 0 && gap < 0.42 {
+            lastRightCommandTap = .distantPast
+            rightCommandFired = true
+            fireHotkey()
+          }
+        } else {
+          lastRightCommandTap = .distantPast
+        }
+      } else if !right && rightCommandDown {
+        rightCommandDown = false
+        let held = Date().timeIntervalSince(rightCommandDownAt)
+        if !rightCommandDirty && !rightCommandFired && !otherModifiers && held < 0.5 {
+          lastRightCommandTap = Date()
+        } else {
+          lastRightCommandTap = .distantPast
+        }
+      }
+    } else if type == .keyDown && rightCommandDown {
+      rightCommandDirty = true
     }
   case "space-right-command":
     if type == .flagsChanged {
@@ -920,10 +961,17 @@ func runHotkey(mode: String) {
   hotkeyArmed = true
   rightCommandDown = false
   swallowSpaceUp = false
+  lastRightCommandTap = .distantPast
+  rightCommandDownAt = .distantPast
+  rightCommandDirty = false
+  rightCommandFired = false
   var mask = CGEventMask(1 << CGEventType.flagsChanged.rawValue)
   if mode == "space-right-command" {
     mask |= CGEventMask(1 << CGEventType.keyDown.rawValue)
     mask |= CGEventMask(1 << CGEventType.keyUp.rawValue)
+  }
+  if mode == "double-right-command" {
+    mask |= CGEventMask(1 << CGEventType.keyDown.rawValue)
   }
   guard let tap = CGEvent.tapCreate(
     tap: .cgSessionEventTap,
@@ -970,7 +1018,7 @@ case "status":
   promptAccessibilityIfNeeded()
   status()
 case "hotkey":
-  let mode = argValue("--mode") ?? "right-command-right-option"
+  let mode = argValue("--mode") ?? "double-right-command"
   if mode == "carbon" {
     let keyCode = UInt32(argValue("--key-code") ?? "0") ?? 0
     let modifiers = UInt32(argValue("--modifiers") ?? "768") ?? 768

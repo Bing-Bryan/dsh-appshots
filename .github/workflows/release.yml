@@ -34,4 +34,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release create "$GITHUB_REF_NAME" --verify-tag --generate-notes --title "$GITHUB_REF_NAME" "$TARBALL" "$FIXED_TARBALL"
-      - run: npm publish --access public --provenance
+      - if: github.repository == 'WongYuYe/dsh-appshots'
+        run: npm publish --access public --provenance

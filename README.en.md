@@ -16,6 +16,24 @@ The default hotkey is **double-tap Right Command** (to avoid Codex's double-Comm
 - Does not skip DSH by default, so you can share the DSH window itself
 - After capture, brings DeepSeek Harness (or DSH Desktop) to the front
 
+## Why this fork
+
+Upstream [`WongYuYe/dsh-appshots`](https://github.com/WongYuYe/dsh-appshots) targets DSH Desktop. This fork keeps upstream's window capture, camera button and Windows support, but rebuilds the capture path, text context and View text around the official **DeepSeek Harness**.
+
+This is not just a UI change: the native helper, host routes and client all changed.
+
+| | Upstream | This fork |
+|---|---|---|
+| Target app | DSH Desktop | Official DeepSeek Harness + DSH Desktop (`com.deepseek.dsh`, plus a parent-PID walk) |
+| Hotkey | Both Command / Ctrl keys | Double-tap Right Command by default; Space + Right Command, Right Command + Right Option, and both Command also supported |
+| Capture feedback | None | System shutter sound + a 5px glowing outline around the captured window |
+| View text | Raw accessibility tree | Compact: sidebars/navigation/tab groups/toolbars skipped, duplicate `Description` removed, capped at 8k with the newest content kept |
+| Text context | Bound on attach, injected on send | Compact text follows the image; **removed or replaced image means no injection** |
+| Stability | AX/AppleScript forced activation | No AX frontmost write; LaunchServices activation, plus `sessions.open` compatibility |
+| Capturing DSH itself | Skipped by default | Not skipped by default, so you can send the DSH UI itself |
+
+In one line: **upstream is the generic DSH Desktop build; this fork is the official-Harness adaptation, focused on making screenshot, text and stability one reliable path.**
+
 ## Compared with Codex
 
 Same Gemini answer: Codex returns 2,393 chars / 50 lines; dsh-appshots returns 2,006 chars / 13 lines. Similar length, but Codex keeps `split group`, `row/cell` and duplicate `Description` entries; dsh-appshots keeps only readable text, with buttons as `[button]`.

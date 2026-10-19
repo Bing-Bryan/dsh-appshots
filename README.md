@@ -16,6 +16,24 @@
 - 默认不跳过 DSH 自身：在 DSH 里按也会截 DSH，方便把界面本身发给模型
 - 截图后自动把 DeepSeek Harness（或 DSH Desktop）调到前台
 
+## 为什么有这个 fork
+
+上游 [`WongYuYe/dsh-appshots`](https://github.com/WongYuYe/dsh-appshots) 是给 DSH Desktop 写的。这个 fork 保留上游的窗口捕获、相机按钮和 Windows 支持，但围绕官方 **DeepSeek Harness** 重做了捕获链路、文本上下文和查看文本。
+
+不是只改了 UI：native helper、host 路由和客户端都改了。
+
+| | 上游 | 这个 fork |
+|---|---|---|
+| 目标应用 | DSH Desktop | 官方 DeepSeek Harness + DSH Desktop（识别 `com.deepseek.dsh`，并沿父进程链找宿主） |
+| 热键 | 同时按左右 Command / Ctrl | 默认双击右 ⌘；也支持空格 + 右 ⌘、右 ⌘ + 右 ⌥、同时按 |
+| 捕获反馈 | 无 | 系统快门声 + 目标窗口 5px 发光描边 |
+| 查看文本 | 原始辅助功能树 | 压缩：跳过侧边栏/导航/标签组/工具栏，去重 `Description`，8k 封顶并保留最近内容 |
+| 文本上下文 | 附加时绑定，发送时注入 | 压缩文本随图片发送；图片被移除或替换就不注入 |
+| 稳定性 | 通过 AX/AppleScript 强制前台 | 去掉 AX frontmost 写入，改用 LaunchServices 安全激活；修复 `sessions.open` 兼容 |
+| 截 DSH 自身 | 默认跳过 | 默认不跳过，方便把 DSH 界面发给模型 |
+
+一句话概括：**上游是 DSH Desktop 的通用版；这个 fork 是官方 Harness 的适配版，重点是把截图、文本和稳定性做成一条可靠的链路。**
+
 ## 和 Codex 对比
 
 同一个 Gemini 回答：Codex 2,393 字 / 50 行，dsh-appshots 2,006 字 / 13 行。长度接近，但 Codex 保留了 `split group`、`row/cell` 和重复的 `Description`；dsh-appshots 只留可读正文，按钮写成 `[button]`。

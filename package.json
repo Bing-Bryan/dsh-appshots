@@ -21,14 +21,17 @@
   ],
   "license": "MIT",
   "author": "WongYuYe",
+  "contributors": [
+    "Bing-Bryan"
+  ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/WongYuYe/dsh-appshots.git"
+    "url": "git+https://github.com/Bing-Bryan/dsh-appshots.git"
   },
   "bugs": {
-    "url": "https://github.com/WongYuYe/dsh-appshots/issues"
+    "url": "https://github.com/Bing-Bryan/dsh-appshots/issues"
   },
-  "homepage": "https://github.com/WongYuYe/dsh-appshots#readme",
+  "homepage": "https://github.com/Bing-Bryan/dsh-appshots#readme",
   "keywords": [
     "dsh",
     "dsh-plugin",

@@ -773,6 +773,21 @@ func activateDshDesktop() -> [String: Any] {
   ]
 }
 
+func playShutterSound() {
+  let paths = [
+    "/System/Library/Components/CoreAudio.component/Contents/SharedSupport/SystemSounds/system/Shutter.aif",
+    "/System/Library/Sounds/Pop.aiff",
+  ]
+  guard let path = paths.first(where: { FileManager.default.fileExists(atPath: $0) }) else { return }
+  let process = Process()
+  process.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
+  process.arguments = [path]
+  do {
+    try process.run()
+    process.waitUntilExit()
+  } catch {}
+}
+
 func selfSkipPid() -> Set<pid_t> {
   guard let app = resolveHostApplication() else { return [] }
   return [app.processIdentifier]
@@ -1014,6 +1029,9 @@ case "front":
   promptAccessibilityIfNeeded()
   let payload = frontPayload(skipSelf: skipSelf, maxChars: maxChars)
   emit(payload)
+  if payload["ok"] as? Bool == true, !hasFlag("--silent") {
+    playShutterSound()
+  }
   if payload["ok"] as? Bool != true { exit(1) }
 case "pidtext":
   let targetPid = pid_t(argValue("--pid") ?? "0") ?? 0

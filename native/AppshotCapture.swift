@@ -781,7 +781,7 @@ func playShutterSound() {
   guard let path = paths.first(where: { FileManager.default.fileExists(atPath: $0) }) else { return }
   let process = Process()
   process.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
-  process.arguments = [path]
+  process.arguments = ["-v", "0.7", path]
   do {
     try process.run()
     process.waitUntilExit()

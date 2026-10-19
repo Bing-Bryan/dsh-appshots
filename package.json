@@ -1,6 +1,6 @@
 {
   "name": "dsh-appshots",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Codex-style Appshots for the official DeepSeek Harness desktop (and DSH Desktop): double-tap Right Command (or Space + Right Command / Right Command + Right Option, or the camera button) grabs the frontmost window and attaches its screenshot to the composer draft, with the accessibility tree available through View text.",
   "type": "module",
   "main": "lib/index.js",

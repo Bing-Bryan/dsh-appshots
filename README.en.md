@@ -7,6 +7,22 @@
 
 A window-capture plugin for the official **DeepSeek Harness** (also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop)). Double-tap Right Command, drop the frontmost window into the composer, and send its compact text as hidden context alongside the image.
 
+## What this fork improves
+
+This fork is based on upstream [`WongYuYe/dsh-appshots`](https://github.com/WongYuYe/dsh-appshots), but it is not just a UI change: the native helper, host routes and client all changed. The main improvements are official Harness support, stability, View text quality, capture feedback, and safe hidden context.
+
+| | Upstream | This fork's improvement |
+|---|---|---|
+| Target app | DSH Desktop | Official DeepSeek Harness + DSH Desktop (`com.deepseek.dsh`, plus a parent-PID walk) |
+| Hotkey | Both Command / Ctrl keys | Double-tap Right Command by default; Space + Right Command, Right Command + Right Option, and both Command also supported |
+| Capture feedback | None | System shutter sound + a 5px glowing outline around the captured window |
+| View text | Raw accessibility tree | Compact: sidebars/navigation/tab groups/toolbars skipped, duplicate `Description` removed, capped at 8k with the newest content kept |
+| Text context | Bound on attach, injected on send | Compact text follows the image; **removed or replaced image means no injection** |
+| Stability | AX/AppleScript forced activation | No AX frontmost write; LaunchServices activation, plus `sessions.open` compatibility |
+| Capturing DSH itself | Skipped by default | Not skipped by default, so you can send the DSH UI itself |
+
+In one line: **upstream is the generic DSH Desktop build; this fork is the official-Harness adaptation, focused on making screenshot, text and stability one reliable path.**
+
 ![dsh-appshots UI mockup](assets/hero-en.png)
 
 *UI mockup: the target window is outlined, the screenshot lands in the composer, and View text shows the compact copy.*
@@ -78,24 +94,6 @@ Same Gemini answer: Codex returns 2,393 chars / 50 lines; dsh-appshots returns 2
 ![Codex vs dsh-appshots on a Gemini answer](assets/case-gemini.png)
 
 *A text-structure comparison, not a UI screenshot.*
-
-## Why this fork
-
-Upstream [`WongYuYe/dsh-appshots`](https://github.com/WongYuYe/dsh-appshots) targets DSH Desktop. This fork keeps upstream's window capture, camera button and Windows support, but rebuilds the capture path, text context and View text around the official **DeepSeek Harness**.
-
-The changes are mainly in the native helper, host routes and client, not just the UI.
-
-| | Upstream | This fork |
-|---|---|---|
-| Target app | DSH Desktop | Official DeepSeek Harness + DSH Desktop (`com.deepseek.dsh`, plus a parent-PID walk) |
-| Hotkey | Both Command / Ctrl keys | Double-tap Right Command by default; Space + Right Command, Right Command + Right Option, and both Command also supported |
-| Capture feedback | None | System shutter sound + a 5px glowing outline around the captured window |
-| View text | Raw accessibility tree | Compact: sidebars/navigation/tab groups/toolbars skipped, duplicate `Description` removed, capped at 8k with the newest content kept |
-| Text context | Bound on attach, injected on send | Compact text follows the image; **removed or replaced image means no injection** |
-| Stability | AX/AppleScript forced activation | No AX frontmost write; LaunchServices activation, plus `sessions.open` compatibility |
-| Capturing DSH itself | Skipped by default | Not skipped by default, so you can send the DSH UI itself |
-
-In one line: **upstream is the generic DSH Desktop build; this fork is the official-Harness adaptation, focused on making screenshot, text and stability one reliable path.**
 
 ## Permissions
 

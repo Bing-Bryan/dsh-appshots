@@ -405,11 +405,14 @@ func nodeLine(_ element: AXUIElement) -> String {
       extras.append("URL: \(url)")
     }
   }
-  if extras.isEmpty { return head }
-  if ident.name == nil {
-    return "\(head) \(extras.joined(separator: ", "))".trimmingCharacters(in: .whitespaces)
+  func oneLine(_ value: String) -> String {
+    value.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
   }
-  return "\(head), \(extras.joined(separator: ", "))"
+  if extras.isEmpty { return oneLine(head) }
+  if ident.name == nil {
+    return oneLine("\(head) \(extras.joined(separator: ", "))")
+  }
+  return oneLine("\(head), \(extras.joined(separator: ", "))")
 }
 
 func shouldSkipDuplicateChild(_ parent: AXUIElement, _ child: AXUIElement) -> Bool {
@@ -1012,6 +1015,17 @@ case "front":
   let payload = frontPayload(skipSelf: skipSelf, maxChars: maxChars)
   emit(payload)
   if payload["ok"] as? Bool != true { exit(1) }
+case "pidtext":
+  let targetPid = pid_t(argValue("--pid") ?? "0") ?? 0
+  guard targetPid > 0 else { fail("missing --pid") }
+  let extracted = windowText(pid: targetPid, owner: "", windowName: argValue("--title") ?? "", maxChars: maxChars)
+  emit([
+    "ok": true,
+    "pid": Int(targetPid),
+    "text": extracted.text,
+    "textTruncated": extracted.truncated,
+    "axTrusted": extracted.trusted,
+  ])
 case "activate":
   emit(["ok": true, "event": "activated", "target": activateDshDesktop()])
 case "status":

@@ -4,28 +4,28 @@
 
 [简体中文](README.md) | English
 
-Codex-style window capture for [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop) on macOS and Windows.
+Codex-style window capture for the official **DeepSeek Harness** desktop app, also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop), on macOS and Windows.
 
-Press both Command keys on macOS, both Ctrl keys on Windows, or the camera button next to the composer to grab the frontmost window, attach it to the current chat, and inject available window text as hidden context.
+The default hotkey is **Right Command + Right Option** (to avoid Codex's double-Command), or **Space + Right Command**, or the camera button next to the composer: grab the frontmost window, attach it to the current chat, and inject available window text as hidden context.
 
 - Captures the frontmost window only, not the whole screen
 - Attaches the screenshot to the composer draft without sending it
 - Reads available window text (Accessibility on macOS, UI Automation on Windows) and injects it as hidden model context
-- Skips DSH Desktop itself so the plugin does not capture its own window
-- After capture, brings DSH Desktop to the front
+- Does not skip DSH by default, so you can share the DSH window itself
+- After capture, brings DeepSeek Harness (or DSH Desktop) to the front
 
 ## Install
 
 ```sh
-dsh plugin --profile desktop add dsh-appshots
+dsh plugin --profile desktop add github:Bing-Bryan/dsh-appshots
 ```
 
-Restart DSH Desktop after installing.
+Restart DeepSeek Harness after installing.
 
 From source:
 
 ```sh
-git clone https://github.com/WongYuYe/dsh-appshots.git
+git clone https://github.com/Bing-Bryan/dsh-appshots.git
 cd dsh-appshots
 dsh plugin --profile desktop add .
 ```
@@ -41,9 +41,11 @@ Release: bump `package.json` to `X.Y.Z` and push a `vX.Y.Z` tag. GitHub Actions 
 System Settings → Privacy & Security:
 
 - **Screen Recording**: required to capture the frontmost window
-- **Accessibility**: required to listen for both Command keys and read window text
+- **Accessibility**: required to listen for the hotkey and read window text
 
-Grant these to **DSH Desktop**. If the hotkey does not fire, also allow `appshot-capture`.
+Grant these to **DeepSeek Harness** (or **DSH Desktop** for the third-party shell). If the hotkey does not fire, also allow `appshot-capture`.
+
+> `Space + Right Command` consumes the Space key to avoid Spotlight, but without Accessibility granted to the helper macOS may still open Spotlight. The default `Right Command + Right Option` is the safer choice.
 
 ### Windows
 
@@ -54,8 +56,8 @@ Grant these to **DSH Desktop**. If the hotkey does not fire, also allow `appshot
 ## Use
 
 1. Focus the window you want to share.
-2. Press both Command keys (macOS) or both Ctrl keys (Windows), or click the camera button in the composer.
-3. DSH Desktop comes to the front with the screenshot attached.
+2. Press **Right Command + Right Option** (default on macOS) or both Ctrl keys (Windows), or click the camera button in the composer.
+3. DeepSeek Harness comes to the front with the screenshot attached.
 4. Add a prompt and send.
 
 If a session is currently open, the appshot goes there. If none is open, a new session is created. Consecutive captures go to the same session.
@@ -66,16 +68,21 @@ Namespace `dsh-appshots` in `~/.dsh/settings.yaml`:
 
 | Field | Default | Meaning |
 |---|---|---|
-| `skipSelf` | `true` | Skip DSH Desktop itself |
+| `skipSelf` | `false` | Skip DeepSeek Harness itself; `false` lets you capture the DSH window |
 | `attachText` | `true` | Inject the accessibility tree as hidden model context on send |
 | `recentWindowMs` | `60000` | If no session is open, reuse the session captured within this window |
-| `hotkeyMode` | `auto` | `auto` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
+| `hotkeyMode` | `auto` | `auto` / `right-command-right-option` / `space-right-command` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
 | `carbonKeyCode` | `0` | Carbon key code when `hotkeyMode` is `carbon` |
 | `carbonModifiers` | `256` | Carbon modifiers; 256 is Command |
 | `winVk` | `44` | Virtual-key code when `hotkeyMode` is `win-hotkey` (44 is PrintScreen) |
 | `winModifiers` | `3` | Win32 modifiers for `win-hotkey`; 3 is Ctrl+Alt |
 
-`auto` is both Command keys on macOS and both Ctrl keys on Windows.
+`auto` is **Right Command + Right Option** on macOS and both Ctrl keys on Windows. To switch to Space + Right Command:
+
+```yaml
+dsh-appshots:
+  hotkeyMode: space-right-command
+```
 
 ## Limits
 

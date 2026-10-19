@@ -22,6 +22,50 @@ let skipOwners: Set<String> = [
 
 let leftCommandMask: UInt64 = 0x00000008
 let rightCommandMask: UInt64 = 0x00000010
+let rightOptionMask: UInt64 = 0x00000040
+
+// The official DeepSeek Harness desktop app and the DSH Desktop shell.
+let dshBundleIDs: Set<String> = [
+  "com.deepseek.dsh",
+  "ai.deepseek.dsh-desktop",
+  "com.deepseek.dsh-desktop",
+]
+let dshAppNames: Set<String> = ["DeepSeek Harness", "DSH Desktop"]
+
+func isDshApplication(_ app: NSRunningApplication) -> Bool {
+  if let bundle = app.bundleIdentifier, dshBundleIDs.contains(bundle) { return true }
+  if let name = app.localizedName, dshAppNames.contains(name) { return true }
+  return false
+}
+
+func parentPid(of pid: pid_t) -> pid_t {
+  var info = kinfo_proc()
+  var size = MemoryLayout<kinfo_proc>.stride
+  var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, pid]
+  guard sysctl(&mib, 4, &info, &size, nil, 0) == 0 else { return 0 }
+  return info.kp_eproc.e_ppid
+}
+
+/// Resolve the GUI application that owns this helper by walking the parent
+/// process chain. This keeps the plugin working for both the official
+/// DeepSeek Harness app and third-party DSH Desktop shells.
+func resolveHostApplication() -> NSRunningApplication? {
+  var pid = getppid()
+  var hops = 0
+  while pid > 1 && hops < 16 {
+    if let app = NSRunningApplication(processIdentifier: pid), isDshApplication(app) {
+      return app
+    }
+    pid = parentPid(of: pid)
+    hops += 1
+  }
+  return nil
+}
+
+func anyDshApplication() -> NSRunningApplication? {
+  let apps = NSWorkspace.shared.runningApplications.filter(isDshApplication)
+  return apps.first(where: { $0.isActive }) ?? apps.first
+}
 
 func emit(_ object: [String: Any]) {
   guard JSONSerialization.isValidJSONObject(object),
@@ -52,7 +96,7 @@ func isSkippableOwner(_ owner: String, extra: Set<String>) -> Bool {
   extra.contains(owner) || skipOwners.contains(owner)
 }
 
-func pickTargetWindow(skipOwners extra: Set<String>) -> (id: CGWindowID, owner: String, name: String, pid: pid_t)? {
+func pickTargetWindow(skipOwners extra: Set<String>, skipPids: Set<pid_t> = []) -> (id: CGWindowID, owner: String, name: String, pid: pid_t)? {
   let windows = windowList().compactMap { info -> (id: CGWindowID, owner: String, name: String, pid: pid_t, area: Double)? in
     let layer = info[kCGWindowLayer as String] as? Int ?? -1
     guard layer == 0 else { return nil }
@@ -61,7 +105,7 @@ func pickTargetWindow(skipOwners extra: Set<String>) -> (id: CGWindowID, owner: 
     let pid = info[kCGWindowOwnerPID as String] as? pid_t ?? -1
     let id = CGWindowID(info[kCGWindowNumber as String] as? UInt32 ?? 0)
     let area = windowArea(info[kCGWindowBounds as String] as? [String: Any])
-    guard id != 0, pid > 0, area >= 80 * 80 else { return nil }
+    guard id != 0, pid > 0, area >= 80 * 80, !skipPids.contains(pid) else { return nil }
     return (id, owner, name, pid, area)
   }
 
@@ -71,7 +115,8 @@ func pickTargetWindow(skipOwners extra: Set<String>) -> (id: CGWindowID, owner: 
 
   if let front = NSWorkspace.shared.frontmostApplication {
     let owner = front.localizedName ?? ""
-    if !isSkippableOwner(owner, extra: extra), let picked = largest(for: front.processIdentifier) {
+    if !isSkippableOwner(owner, extra: extra), !skipPids.contains(front.processIdentifier),
+       let picked = largest(for: front.processIdentifier) {
       return picked
     }
   }
@@ -702,38 +747,42 @@ func windowText(pid: pid_t, owner: String, windowName: String, maxChars: Int) ->
   return (text, false, true)
 }
 
-func activateDshDesktop() {
-  let named = NSWorkspace.shared.runningApplications.filter { app in
-    (app.localizedName ?? "") == "DSH Desktop"
+func activateDshDesktop() -> [String: Any] {
+  guard let target = resolveHostApplication() ?? anyDshApplication() else {
+    return ["app": "", "pid": 0, "axResult": -1, "reason": "no-host-app"]
   }
-  let bundled = NSRunningApplication.runningApplications(withBundleIdentifier: "ai.deepseek.dsh-desktop")
-    + NSRunningApplication.runningApplications(withBundleIdentifier: "com.deepseek.dsh-desktop")
-  guard let target = named.first ?? bundled.first else { return }
-  if #available(macOS 14.0, *) {
-    target.activate()
-  } else {
-    target.activate(options: [.activateIgnoringOtherApps])
+  // NSRunningApplication.activate() is ignored for a helper process on recent
+  // macOS versions; the Accessibility frontmost attribute still works and
+  // needs the same permission the rest of the helper already asks for.
+  let app = AXUIElementCreateApplication(target.processIdentifier)
+  let setFrontmost = AXUIElementSetAttributeValue(app, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
+  if setFrontmost != .success {
+    if #available(macOS 14.0, *) {
+      _ = target.activate()
+    } else {
+      _ = target.activate(options: [.activateIgnoringOtherApps])
+    }
   }
-  let src = """
-  tell application "System Events"
-    set procs to every process whose name is "DSH Desktop"
-    if (count of procs) > 0 then
-      set frontmost of item 1 of procs to true
-    end if
-  end tell
-  """
-  if let script = NSAppleScript(source: src) {
-    var error: NSDictionary?
-    _ = script.executeAndReturnError(&error)
-  }
+  return [
+    "app": target.localizedName ?? "",
+    "pid": Int(target.processIdentifier),
+    "axResult": Int(setFrontmost.rawValue),
+  ]
+}
+
+func selfSkipPid() -> Set<pid_t> {
+  guard let app = resolveHostApplication() else { return [] }
+  return [app.processIdentifier]
 }
 
 func extraSkip(skipSelf: Bool) -> Set<String> {
-  skipSelf ? ["DSH Desktop", "DSH Desktop Helper"] : []
+  guard skipSelf, let app = resolveHostApplication(), let name = app.localizedName else { return [] }
+  return [name]
 }
 
 func frontPayload(skipSelf: Bool, maxChars: Int) -> [String: Any] {
-  guard let target = pickTargetWindow(skipOwners: extraSkip(skipSelf: skipSelf)) else {
+  let skipPids = skipSelf ? selfSkipPid() : []
+  guard let target = pickTargetWindow(skipOwners: extraSkip(skipSelf: skipSelf), skipPids: skipPids) else {
     return ["ok": false, "error": "no on-screen window to capture"]
   }
   let extracted = windowText(pid: target.pid, owner: target.owner, windowName: target.name, maxChars: maxChars)
@@ -751,7 +800,9 @@ func frontPayload(skipSelf: Bool, maxChars: Int) -> [String: Any] {
 
 func status() {
   let extras = extraSkip(skipSelf: true)
-  let target = pickTargetWindow(skipOwners: extras)
+  let skipPids = selfSkipPid()
+  let target = pickTargetWindow(skipOwners: extras, skipPids: skipPids)
+  let host = resolveHostApplication()
   let namesPresent = windowList().contains { info in
     let owner = info[kCGWindowOwnerName as String] as? String ?? ""
     let name = info[kCGWindowName as String] as? String ?? ""
@@ -763,6 +814,9 @@ func status() {
     "windowNamesVisible": namesPresent,
     "frontOwner": target?.owner ?? "",
     "frontTitle": target?.name ?? "",
+    "hostApp": host?.localizedName ?? "",
+    "hostBundle": host?.bundleIdentifier ?? "",
+    "hostPid": host.map { Int($0.processIdentifier) } ?? 0,
   ])
 }
 
@@ -788,49 +842,104 @@ func runCarbonHotkey(keyCode: UInt32, modifiers: UInt32) {
   RunLoop.main.run()
 }
 
-private var bothCommandArmed = true
-private var bothCommandTap: CFMachPort?
+private var hotkeyArmed = true
+private var hotkeyTap: CFMachPort?
+private var activeHotkeyMode = "both-command"
+private var rightCommandDown = false
+private var swallowSpaceUp = false
+private var lastHotkeyFire = Date.distantPast
 
-func bothCommandTapCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?) -> Unmanaged<CGEvent>? {
+func fireHotkey() {
+  let now = Date()
+  guard now.timeIntervalSince(lastHotkeyFire) > 0.35 else { return }
+  lastHotkeyFire = now
+  emit(["event": "hotkey"])
+}
+
+func hotkeyTapCallback(proxy: CGEventTapProxy, type: CGEventType, event: CGEvent, refcon: UnsafeMutableRawPointer?) -> Unmanaged<CGEvent>? {
   if type == .tapDisabledByTimeout || type == .tapDisabledByUserInput {
-    if let tap = bothCommandTap {
+    if let tap = hotkeyTap {
       CGEvent.tapEnable(tap: tap, enable: true)
     }
     return Unmanaged.passUnretained(event)
   }
   let flags = event.flags.rawValue
-  let left = (flags & leftCommandMask) != 0
-  let right = (flags & rightCommandMask) != 0
-  if left && right {
-    if bothCommandArmed {
-      bothCommandArmed = false
-      emit(["event": "hotkey"])
+  switch activeHotkeyMode {
+  case "right-command-right-option":
+    if type == .flagsChanged {
+      let rightCommand = (flags & rightCommandMask) != 0
+      let rightOption = (flags & rightOptionMask) != 0
+      if rightCommand && rightOption {
+        if hotkeyArmed {
+          hotkeyArmed = false
+          fireHotkey()
+        }
+      } else {
+        hotkeyArmed = true
+      }
     }
-  } else {
-    bothCommandArmed = true
+  case "space-right-command":
+    if type == .flagsChanged {
+      rightCommandDown = (flags & rightCommandMask) != 0
+      if !rightCommandDown { swallowSpaceUp = false }
+    } else if type == .keyDown {
+      let code = event.getIntegerValueField(.keyboardEventKeycode)
+      if code == 49 && rightCommandDown {
+        let isRepeat = event.getIntegerValueField(.keyboardEventAutorepeat) != 0
+        if !isRepeat { fireHotkey() }
+        swallowSpaceUp = true
+        return nil
+      }
+    } else if type == .keyUp {
+      let code = event.getIntegerValueField(.keyboardEventKeycode)
+      if code == 49 && swallowSpaceUp {
+        swallowSpaceUp = false
+        return nil
+      }
+    }
+  default:
+    if type == .flagsChanged {
+      let left = (flags & leftCommandMask) != 0
+      let right = (flags & rightCommandMask) != 0
+      if left && right {
+        if hotkeyArmed {
+          hotkeyArmed = false
+          fireHotkey()
+        }
+      } else {
+        hotkeyArmed = true
+      }
+    }
   }
   return Unmanaged.passUnretained(event)
 }
 
-func runBothCommandHotkey() {
+func runHotkey(mode: String) {
   promptAccessibilityIfNeeded()
-  bothCommandArmed = true
-  let mask = CGEventMask(1 << CGEventType.flagsChanged.rawValue)
+  activeHotkeyMode = mode
+  hotkeyArmed = true
+  rightCommandDown = false
+  swallowSpaceUp = false
+  var mask = CGEventMask(1 << CGEventType.flagsChanged.rawValue)
+  if mode == "space-right-command" {
+    mask |= CGEventMask(1 << CGEventType.keyDown.rawValue)
+    mask |= CGEventMask(1 << CGEventType.keyUp.rawValue)
+  }
   guard let tap = CGEvent.tapCreate(
     tap: .cgSessionEventTap,
     place: .headInsertEventTap,
-    options: .listenOnly,
+    options: mode == "space-right-command" ? .defaultTap : .listenOnly,
     eventsOfInterest: mask,
-    callback: bothCommandTapCallback,
+    callback: hotkeyTapCallback,
     userInfo: nil
   ) else {
-    fail("failed to create event tap. Grant Accessibility to DSH Desktop and appshot-capture.")
+    fail("failed to create event tap. Grant Accessibility to DeepSeek Harness and appshot-capture.")
   }
-  bothCommandTap = tap
+  hotkeyTap = tap
   let source = CFMachPortCreateRunLoopSource(kCFAllocatorDefault, tap, 0)
   CFRunLoopAddSource(CFRunLoopGetCurrent(), source, .commonModes)
   CGEvent.tapEnable(tap: tap, enable: true)
-  emit(["event": "ready", "mode": "both-command"])
+  emit(["event": "ready", "mode": mode])
   CFRunLoopRun()
 }
 
@@ -856,19 +965,18 @@ case "front":
   emit(payload)
   if payload["ok"] as? Bool != true { exit(1) }
 case "activate":
-  activateDshDesktop()
-  emit(["ok": true, "event": "activated"])
+  emit(["ok": true, "event": "activated", "target": activateDshDesktop()])
 case "status":
   promptAccessibilityIfNeeded()
   status()
 case "hotkey":
-  let mode = argValue("--mode") ?? "both-command"
+  let mode = argValue("--mode") ?? "right-command-right-option"
   if mode == "carbon" {
     let keyCode = UInt32(argValue("--key-code") ?? "0") ?? 0
     let modifiers = UInt32(argValue("--modifiers") ?? "768") ?? 768
     runCarbonHotkey(keyCode: keyCode, modifiers: modifiers)
   } else {
-    runBothCommandHotkey()
+    runHotkey(mode: mode)
   }
 default:
   fail("unknown command \(command)")

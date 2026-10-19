@@ -6,12 +6,12 @@
 
 给官方 **DeepSeek Harness** 桌面端用的窗口截图，也兼容 [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop)，支持 macOS 和 Windows。
 
-默认热键是 **双击右 ⌘**（避开 Codex 的双 Command），也可以改成 **空格 + 右 ⌘** 或 **右 ⌘ + 右 ⌥**，或点输入框旁的相机，捕获当前前台窗口，把截图附加到输入框草稿；你不动它就不会发出，点开图片还能查看完整窗口文字。
+默认热键是 **双击右 ⌘**（避开 Codex 的双 Command），也可以改成 **空格 + 右 ⌘** 或 **右 ⌘ + 右 ⌥**，或点输入框旁的相机，捕获当前前台窗口，把截图附加到输入框草稿；你不动它就不会发出，点开图片还能查看压缩后的窗口文字。
 
 - 只捕获最前面的窗口，不截整个屏幕
 - 截图只附加到输入框草稿，**不会自动发送**；你不发送，它就一直在草稿里
-- 点开已附加的图片，右上角有「查看文本」，可以展开完整的辅助功能树
-- 发送时窗口文字作为隐藏上下文一起交给模型
+- 点开已附加的图片，右上角有「查看文本」，展示压缩后的辅助功能文字（去容器/Help，按钮写成 `[button]`，最多 8k 字）
+- 发送时只带图片，不再注入几万字的隐藏文本
 - 默认不跳过 DSH 自身：在 DSH 里按也会截 DSH，方便把界面本身发给模型
 - 截图后自动把 DeepSeek Harness（或 DSH Desktop）调到前台
 
@@ -70,7 +70,6 @@ Windows 会在第一次截图时用系统自带的 `csc.exe`（.NET Framework 4.
 | 字段 | 默认值 | 含义 |
 |---|---|---|
 | `skipSelf` | `false` | 跳过 DeepSeek Harness 自身；默认 `false`，所以能截 DSH 自己的窗口 |
-| `attachText` | `true` | 发送时把辅助功能树作为隐藏模型上下文注入；关掉后只能通过「查看文本」看 |
 | `recentWindowMs` | `60000` | 没有打开会话时，复用这个时间窗口内截图过的会话 |
 | `hotkeyMode` | `auto` | `auto` / `double-right-command` / `space-right-command` / `right-command-right-option` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
 | `carbonKeyCode` | `0` | `hotkeyMode` 为 `carbon` 时的 Carbon 键码 |
@@ -89,8 +88,8 @@ dsh-appshots:
 
 - 仅支持 macOS 和 Windows
 - 窗口文字来自系统辅助功能树，部分应用只暴露可见文本
-- 隐藏文本按 VoiceOver / UI Automation 树输出（角色、缩进、Description / Value / URL），不再做成扁平行
-- 点击已附加的 Appshot 预览时，右上角可「查看文本」，展示当前窗口读到的辅助功能文字
+- 窗口文字会压缩：去容器/Help，按钮写成 `[button]`，长文本合并，最多 8k 字
+- 压缩文本只用于「查看文本」，不会随消息发送；模型只看到截图
 - 终端像素（如 VS Code xterm）默认不进辅助功能树，编译日志仍以截图为准
 - Windows 截的是窗口矩形的屏幕像素，被挡住的窗口会带上挡住它的内容
 

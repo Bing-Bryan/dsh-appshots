@@ -6,12 +6,12 @@
 
 Codex-style window capture for the official **DeepSeek Harness** desktop app, also compatible with [DSH Desktop](https://github.com/anywhere-labs/dsh-desktop), on macOS and Windows.
 
-The default hotkey is **double-tap Right Command** (to avoid Codex's double-Command), or **Space + Right Command** or **Right Command + Right Option**, or the camera button next to the composer: grab the frontmost window and attach its screenshot to the composer draft. Nothing is sent until you send it; open the image to view the full window text.
+The default hotkey is **double-tap Right Command** (to avoid Codex's double-Command), or **Space + Right Command** or **Right Command + Right Option**, or the camera button next to the composer: grab the frontmost window and attach its screenshot to the composer draft. Nothing is sent until you send it; open the image to view the compact window text.
 
 - Captures the frontmost window only, not the whole screen
 - Attaches the screenshot to the composer draft; it is **never sent automatically**
-- Opening the attached image shows a **View text** control with the complete accessibility tree
-- On send, the window text is injected as hidden model context
+- Opening the attached image shows a **View text** control with compact accessibility text (containers and Help removed, buttons as `[button]`, capped at 8k characters)
+- On send, only the image is sent; no hidden multi-thousand-character text is injected
 - Does not skip DSH by default, so you can share the DSH window itself
 - After capture, brings DeepSeek Harness (or DSH Desktop) to the front
 
@@ -70,7 +70,6 @@ Namespace `dsh-appshots` in `~/.dsh/settings.yaml`:
 | Field | Default | Meaning |
 |---|---|---|
 | `skipSelf` | `false` | Skip DeepSeek Harness itself; `false` lets you capture the DSH window |
-| `attachText` | `true` | Inject the accessibility tree as hidden model context on send; disable to keep it view-only |
 | `recentWindowMs` | `60000` | If no session is open, reuse the session captured within this window |
 | `hotkeyMode` | `auto` | `auto` / `double-right-command` / `space-right-command` / `right-command-right-option` / `both-command` / `both-control` / `carbon` / `win-hotkey` / `off` |
 | `carbonKeyCode` | `0` | Carbon key code when `hotkeyMode` is `carbon` |
@@ -89,8 +88,8 @@ dsh-appshots:
 
 - macOS and Windows only
 - Window text comes from the platform accessibility tree, so some apps expose only visible copy
-- Hidden text is an indented VoiceOver / UI Automation tree (role, Description / Value / URL), not flattened unique lines
-- Opening an attached Appshot preview adds a View text control that shows the accessibility copy for that window
+- Window text is compacted: containers and Help removed, buttons as `[button]`, long text merged, capped at 8k characters
+- The compact text is view-only; it is not sent with the message, and the model only sees the screenshot
 - Terminal pixels (VS Code xterm) are usually absent from accessibility, so compile logs still come from the screenshot
 - Windows capture copies the on-screen pixels of the window rectangle; occluded windows include whatever is visible
 

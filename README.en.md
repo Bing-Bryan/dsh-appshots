@@ -10,7 +10,7 @@ The default hotkey is **double-tap Right Command** (to avoid Codex's double-Comm
 
 - Captures the frontmost window only, not the whole screen
 - Attaches the screenshot to the composer draft; it is **never sent automatically**
-- Opening the attached image shows a **View text** control with compact accessibility text (containers and Help removed, buttons as `[button]`, capped at 8k characters; when over, the most recent content is kept)
+- Opening the attached image shows a **View text** control with compact accessibility text (containers and Help removed, sidebars/navigation/tab groups skipped, buttons as `[button]`, capped at 8k characters; when over, the most recent content is kept)
 - On send, only the image is sent; no hidden multi-thousand-character text is injected
 - Does not skip DSH by default, so you can share the DSH window itself
 - After capture, brings DeepSeek Harness (or DSH Desktop) to the front
@@ -88,7 +88,7 @@ dsh-appshots:
 
 - macOS and Windows only
 - Window text comes from the platform accessibility tree, so some apps expose only visible copy
-- Window text is compacted: containers and Help removed, buttons as `[button]`, long text merged, capped at 8k characters; older content is dropped first
+- Window text is compacted: containers and Help removed, sidebars/navigation/tab groups skipped, buttons as `[button]`, long text merged, capped at 8k characters; older content is dropped first
 - The compact text is view-only; it is not sent with the message, and the model only sees the screenshot
 - Terminal pixels (VS Code xterm) are usually absent from accessibility, so compile logs still come from the screenshot
 - Windows capture copies the on-screen pixels of the window rectangle; occluded windows include whatever is visible

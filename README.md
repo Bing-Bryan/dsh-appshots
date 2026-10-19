@@ -16,6 +16,12 @@
 - 默认不跳过 DSH 自身：在 DSH 里按也会截 DSH，方便把界面本身发给模型
 - 截图后自动把 DeepSeek Harness（或 DSH Desktop）调到前台
 
+## 和 Codex 对比
+
+同一个 Gemini 回答：Codex 2,393 字 / 50 行，dsh-appshots 2,006 字 / 13 行。长度接近，但 Codex 保留了 `split group`、`row/cell` 和重复的 `Description`；dsh-appshots 只留可读正文，按钮写成 `[button]`。
+
+![Codex 与 dsh-appshots 的 Gemini 文本对比](assets/case-gemini.png)
+
 ## 安装
 
 ```sh

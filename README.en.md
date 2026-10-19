@@ -16,6 +16,12 @@ The default hotkey is **double-tap Right Command** (to avoid Codex's double-Comm
 - Does not skip DSH by default, so you can share the DSH window itself
 - After capture, brings DeepSeek Harness (or DSH Desktop) to the front
 
+## Compared with Codex
+
+Same Gemini answer: Codex returns 2,393 chars / 50 lines; dsh-appshots returns 2,006 chars / 13 lines. Similar length, but Codex keeps `split group`, `row/cell` and duplicate `Description` entries; dsh-appshots keeps only readable text, with buttons as `[button]`.
+
+![Codex vs dsh-appshots on a Gemini answer](assets/case-gemini.png)
+
 ## Install
 
 ```sh

@@ -749,24 +749,24 @@ func windowText(pid: pid_t, owner: String, windowName: String, maxChars: Int) ->
 
 func activateDshDesktop() -> [String: Any] {
   guard let target = resolveHostApplication() ?? anyDshApplication() else {
-    return ["app": "", "pid": 0, "axResult": -1, "reason": "no-host-app"]
+    return ["app": "", "pid": 0, "reason": "no-host-app"]
   }
-  // NSRunningApplication.activate() is ignored for a helper process on recent
-  // macOS versions; the Accessibility frontmost attribute still works and
-  // needs the same permission the rest of the helper already asks for.
-  let app = AXUIElementCreateApplication(target.processIdentifier)
-  let setFrontmost = AXUIElementSetAttributeValue(app, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
-  if setFrontmost != .success {
-    if #available(macOS 14.0, *) {
-      _ = target.activate()
-    } else {
-      _ = target.activate(options: [.activateIgnoringOtherApps])
-    }
+  if NSWorkspace.shared.frontmostApplication?.processIdentifier == target.processIdentifier {
+    return ["app": target.localizedName ?? "", "pid": Int(target.processIdentifier), "alreadyFrontmost": true]
+  }
+  // Never mutate the Host through Accessibility here: an AX frontmost write can
+  // deadlock a busy Host and leave the whole turn hanging. LaunchServices
+  // activation is best-effort and safe.
+  let activated: Bool
+  if #available(macOS 14.0, *) {
+    activated = target.activate(options: [.activateAllWindows])
+  } else {
+    activated = target.activate(options: [.activateAllWindows, .activateIgnoringOtherApps])
   }
   return [
     "app": target.localizedName ?? "",
     "pid": Int(target.processIdentifier),
-    "axResult": Int(setFrontmost.rawValue),
+    "activated": activated,
   ]
 }
 

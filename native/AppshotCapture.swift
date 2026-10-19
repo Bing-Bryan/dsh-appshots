@@ -834,12 +834,12 @@ func showWindowOutline(windowId: CGWindowID) {
   window.alphaValue = 0
   window.orderFrontRegardless()
   NSAnimationContext.runAnimationGroup { context in
-    context.duration = 0.08
+    context.duration = 0.07
     window.animator().alphaValue = 1
   }
-  DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+  DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = 0.22
+      context.duration = 0.18
       window.animator().alphaValue = 0
     }, completionHandler: {
       window.close()

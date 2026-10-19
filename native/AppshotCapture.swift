@@ -782,10 +782,71 @@ func playShutterSound() {
   let process = Process()
   process.executableURL = URL(fileURLWithPath: "/usr/bin/afplay")
   process.arguments = ["-v", "0.7", path]
-  do {
-    try process.run()
-    process.waitUntilExit()
-  } catch {}
+  do { try process.run() } catch {}
+}
+
+func windowQuartzFrame(_ windowId: CGWindowID) -> CGRect? {
+  let options: CGWindowListOption = [.optionIncludingWindow]
+  guard let list = CGWindowListCopyWindowInfo(options, windowId) as? [[String: Any]],
+        let info = list.first,
+        let bounds = info[kCGWindowBounds as String] as? [String: Any],
+        let x = bounds["X"] as? NSNumber,
+        let y = bounds["Y"] as? NSNumber,
+        let width = bounds["Width"] as? NSNumber,
+        let height = bounds["Height"] as? NSNumber,
+        width.doubleValue > 1,
+        height.doubleValue > 1
+  else { return nil }
+  return CGRect(x: x.doubleValue, y: y.doubleValue, width: width.doubleValue, height: height.doubleValue)
+}
+
+func showWindowOutline(windowId: CGWindowID) {
+  guard let quartz = windowQuartzFrame(windowId),
+        let primary = NSScreen.screens.first
+  else { return }
+  let rect = CGRect(
+    x: quartz.origin.x,
+    y: primary.frame.height - quartz.origin.y - quartz.height,
+    width: quartz.width,
+    height: quartz.height
+  ).insetBy(dx: -2, dy: -2)
+  let app = NSApplication.shared
+  app.setActivationPolicy(.accessory)
+  let window = NSWindow(contentRect: rect, styleMask: .borderless, backing: .buffered, defer: false)
+  window.isOpaque = false
+  window.backgroundColor = .clear
+  window.hasShadow = false
+  window.ignoresMouseEvents = true
+  window.level = .floating
+  window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary, .stationary]
+  let view = NSView(frame: NSRect(origin: .zero, size: rect.size))
+  view.wantsLayer = true
+  let accent = NSColor(calibratedRed: 0.42, green: 0.44, blue: 1.0, alpha: 1.0)
+  view.layer?.backgroundColor = NSColor.clear.cgColor
+  view.layer?.cornerRadius = 12
+  view.layer?.borderWidth = 3
+  view.layer?.borderColor = accent.cgColor
+  view.layer?.shadowColor = accent.cgColor
+  view.layer?.shadowOpacity = 0.85
+  view.layer?.shadowRadius = 16
+  view.layer?.shadowOffset = .zero
+  window.contentView = view
+  window.alphaValue = 0
+  window.orderFrontRegardless()
+  NSAnimationContext.runAnimationGroup { context in
+    context.duration = 0.08
+    window.animator().alphaValue = 1
+  }
+  DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+    NSAnimationContext.runAnimationGroup({ context in
+      context.duration = 0.22
+      window.animator().alphaValue = 0
+    }, completionHandler: {
+      window.close()
+      NSApp.terminate(nil)
+    })
+  }
+  app.run()
 }
 
 func selfSkipPid() -> Set<pid_t> {
@@ -1029,8 +1090,13 @@ case "front":
   promptAccessibilityIfNeeded()
   let payload = frontPayload(skipSelf: skipSelf, maxChars: maxChars)
   emit(payload)
-  if payload["ok"] as? Bool == true, !hasFlag("--silent") {
-    playShutterSound()
+  if payload["ok"] as? Bool == true {
+    if !hasFlag("--silent") {
+      playShutterSound()
+    }
+    if let windowId = payload["windowId"] as? Int, windowId > 0, !hasFlag("--no-outline") {
+      showWindowOutline(windowId: CGWindowID(windowId))
+    }
   }
   if payload["ok"] as? Bool != true { exit(1) }
 case "pidtext":

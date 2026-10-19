@@ -10,7 +10,7 @@ The default hotkey is **double-tap Right Command** (to avoid Codex's double-Comm
 
 - Captures the frontmost window only, not the whole screen
 - Attaches the screenshot to the composer draft; it is **never sent automatically**
-- Plays the system camera shutter sound and shows a brief soft flash plus a captured toast
+- Plays the system camera shutter sound, outlines the captured window, then brings DSH forward with the screenshot
 - Opening the attached image shows a **View text** control with compact accessibility text (containers and Help removed, sidebars/navigation/tab groups skipped, buttons as `[button]`, capped at 8k characters; when over, the most recent content is kept)
 - On send, only the image is sent; no hidden multi-thousand-character text is injected
 - Does not skip DSH by default, so you can share the DSH window itself

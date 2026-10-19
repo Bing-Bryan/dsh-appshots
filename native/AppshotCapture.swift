@@ -800,7 +800,7 @@ func windowQuartzFrame(_ windowId: CGWindowID) -> CGRect? {
   return CGRect(x: x.doubleValue, y: y.doubleValue, width: width.doubleValue, height: height.doubleValue)
 }
 
-func showWindowOutline(windowId: CGWindowID) {
+func showWindowOutline(windowId: CGWindowID, durationMs: Int = 1800) {
   guard let quartz = windowQuartzFrame(windowId),
         let primary = NSScreen.screens.first
   else { return }
@@ -823,23 +823,27 @@ func showWindowOutline(windowId: CGWindowID) {
   view.wantsLayer = true
   let accent = NSColor(calibratedRed: 0.42, green: 0.44, blue: 1.0, alpha: 1.0)
   view.layer?.backgroundColor = NSColor.clear.cgColor
-  view.layer?.cornerRadius = 12
-  view.layer?.borderWidth = 3
+  view.layer?.cornerRadius = 14
+  view.layer?.borderWidth = 5
   view.layer?.borderColor = accent.cgColor
   view.layer?.shadowColor = accent.cgColor
-  view.layer?.shadowOpacity = 0.85
-  view.layer?.shadowRadius = 16
+  view.layer?.shadowOpacity = 0.9
+  view.layer?.shadowRadius = 22
   view.layer?.shadowOffset = .zero
   window.contentView = view
   window.alphaValue = 0
   window.orderFrontRegardless()
+  let fadeIn = 0.07
+  let fadeOut = 0.22
+  let total = max(0.3, Double(durationMs) / 1000.0)
+  let hold = max(0.05, total - fadeIn - fadeOut)
   NSAnimationContext.runAnimationGroup { context in
-    context.duration = 0.07
+    context.duration = fadeIn
     window.animator().alphaValue = 1
   }
-  DispatchQueue.main.asyncAfter(deadline: .now() + 0.32) {
+  DispatchQueue.main.asyncAfter(deadline: .now() + fadeIn + hold) {
     NSAnimationContext.runAnimationGroup({ context in
-      context.duration = 0.18
+      context.duration = fadeOut
       window.animator().alphaValue = 0
     }, completionHandler: {
       window.close()
@@ -847,6 +851,14 @@ func showWindowOutline(windowId: CGWindowID) {
     })
   }
   app.run()
+}
+
+func spawnOutline(windowId: CGWindowID, durationMs: Int) {
+  let process = Process()
+  let base = URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)
+  process.executableURL = URL(fileURLWithPath: CommandLine.arguments[0], relativeTo: base).standardizedFileURL
+  process.arguments = ["outline", "--window-id", String(windowId), "--duration-ms", String(durationMs)]
+  do { try process.run() } catch {}
 }
 
 func selfSkipPid() -> Set<pid_t> {
@@ -1088,17 +1100,33 @@ let maxChars = Int(argValue("--max-chars") ?? "80000") ?? 80_000
 switch command {
 case "front":
   promptAccessibilityIfNeeded()
-  let payload = frontPayload(skipSelf: skipSelf, maxChars: maxChars)
-  emit(payload)
-  if payload["ok"] as? Bool == true {
-    if !hasFlag("--silent") {
-      playShutterSound()
-    }
-    if let windowId = payload["windowId"] as? Int, windowId > 0, !hasFlag("--no-outline") {
-      showWindowOutline(windowId: CGWindowID(windowId))
-    }
+  let skipPids = skipSelf ? selfSkipPid() : []
+  guard let target = pickTargetWindow(skipOwners: extraSkip(skipSelf: skipSelf), skipPids: skipPids) else {
+    emit(["ok": false, "error": "no on-screen window to capture"])
+    exit(1)
   }
-  if payload["ok"] as? Bool != true { exit(1) }
+  if !hasFlag("--silent") {
+    playShutterSound()
+  }
+  if !hasFlag("--no-outline") {
+    spawnOutline(windowId: target.id, durationMs: 1800)
+  }
+  let extracted = windowText(pid: target.pid, owner: target.owner, windowName: target.name, maxChars: maxChars)
+  emit([
+    "ok": true,
+    "owner": target.owner,
+    "title": target.name,
+    "pid": Int(target.pid),
+    "windowId": Int(target.id),
+    "text": extracted.text,
+    "textTruncated": extracted.truncated,
+    "axTrusted": extracted.trusted,
+  ])
+case "outline":
+  let windowId = CGWindowID(argValue("--window-id") ?? "0") ?? 0
+  let durationMs = Int(argValue("--duration-ms") ?? "1800") ?? 1800
+  guard windowId > 0 else { exit(0) }
+  showWindowOutline(windowId: windowId, durationMs: durationMs)
 case "pidtext":
   let targetPid = pid_t(argValue("--pid") ?? "0") ?? 0
   guard targetPid > 0 else { fail("missing --pid") }
